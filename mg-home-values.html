@@ -1,1 +1,63 @@
-<iframe src="https://example.com" width="600" height="400" frameborder="0" allowfullscreen></iframe>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Values</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .stat-card { margin: 20px; padding: 20px; border: 1px solid #ccc; border-radius: 5px; }
+        #chartContainer { width: 80%; height: 400px; margin: auto; }
+    </style>
+</head>
+<body>
+    <h1>Property Growth Statistics</h1>
+    <div class="stat-card">
+        <h2>Average Home Value</h2>
+        <p>$300,000</p>
+    </div>
+    <div class="stat-card">
+        <h2>Growth Rate</h2>
+        <p>5% Year-over-Year</p>
+    </div>
+    <div id="chartContainer">
+        <canvas id="myChart"></canvas>
+    </div>
+    <div id="legend">
+        <ul>
+            <li>Phase 1: Initial Growth</li>
+            <li>Phase 2: Expansion</li>
+            <li>Phase 3: Stabilization</li>
+        </ul>
+    </div>
+    <footer>
+        <p>Data Source: Real Estate Report</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const ctx = document.getElementById('myChart').getContext('2d');
+        const myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
+                datasets: [{
+                    label: 'Home Values',
+                    data: [250000, 260000, 270000, 280000, 290000, 300000, 310000],
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 2,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            myChart.resize();
+        });
+    </script>
+</body>
+</html>
