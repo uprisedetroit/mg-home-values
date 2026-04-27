@@ -97,7 +97,8 @@
 
   @media (max-width: 580px) {
     .stat-grid { grid-template-columns: 1fr; }
-    .chart-wrap { height: 300px; }
+    .chart-wrap { height: 320px; }
+    body { padding: 20px 14px 30px; }
   }
 </style>
 </head>
@@ -154,15 +155,23 @@ const detroitIdx = [100,  88,   92,   98,  105,  113,  123,  135,  148,  163,  1
 const nationalIdx =[100, 104,  109,  115,  121,  128,  135,  141,  149,  162,  182,  200,  205,  200,  198];
 
 // Phase colors (very light fills)
-const phase1Color = 'rgba(180, 210, 195, 0.18)'; // soft green
-const phase2Color = 'rgba(180, 200, 230, 0.18)'; // soft blue
-const phase3Color = 'rgba(230, 210, 160, 0.18)'; // soft amber
+const phase1Color = 'rgba(180, 210, 195, 0.18)';
+const phase2Color = 'rgba(180, 200, 230, 0.18)';
+const phase3Color = 'rgba(230, 210, 160, 0.18)';
+
+// Detect mobile once for use in the plugin
+function isMobileViewport() {
+  return window.innerWidth < 580;
+}
 
 const phasePlugin = {
   id: 'phaseRegions',
   beforeDraw(chart) {
     const { ctx, chartArea: { left, right, top, bottom }, scales: { x } } = chart;
     if (!x) return;
+
+    const mobile = isMobileViewport();
+    const topPad = chart.options.layout.padding.top;
 
     function xPos(label) {
       const idx = labels.indexOf(label);
@@ -175,23 +184,28 @@ const phasePlugin = {
         color: phase1Color,
         borderColor: 'rgba(100,160,130,0.35)',
         labelTop: 'Phase 1',
-        labelBottom: 'Founded & Fundraising / Planning Begins'
+        labelBottom: mobile ? 'Founded and Planning' : 'Founded and Fundraising / Planning Begins'
       },
       {
         start: '2015', end: '2019',
         color: phase2Color,
         borderColor: 'rgba(80,130,200,0.35)',
         labelTop: 'Phase 2',
-        labelBottom: 'Groundbreaking, Planting & Building — completed Spring 2017'
+        labelBottom: mobile ? 'Groundbreaking, irrigation, construction & plantings' : 'Groundbreaking, followed by irrigation, construction, and island plantings'
       },
       {
         start: '2019', end: '2025',
         color: phase3Color,
         borderColor: 'rgba(190,155,60,0.4)',
         labelTop: 'Phase 3',
-        labelBottom: '20+ Sculptures · Volunteer Clean-Up Days · Weekly Island Maintenance'
+        labelBottom: mobile ? 'Sculptures installed, ongoing plantings, cleanups & maintenance' : 'Sculptures installed, with ongoing plantings, volunteer cleanups, and maintenance'
       }
     ];
+
+    // Fonts sized for mobile vs desktop
+    const titleFontSize  = mobile ? 10 : 12;
+    const subFontSize    = mobile ? 9  : 10.5;
+    const lineHeight     = mobile ? 12 : 14;
 
     phases.forEach(phase => {
       const x0 = xPos(phase.start);
@@ -203,7 +217,7 @@ const phasePlugin = {
       ctx.fillStyle = phase.color;
       ctx.fillRect(x0, top, w, bottom - top);
 
-      // Left border dashed line through chart area
+      // Left border dashed line
       ctx.strokeStyle = phase.borderColor;
       ctx.lineWidth = 1.5;
       ctx.setLineDash([4, 3]);
@@ -215,29 +229,30 @@ const phasePlugin = {
 
       // Label area: drawn in the padding above the chart
       const labelX = x0 + w / 2;
-      const labelAreaTop = top - 75; // inside the 80px top padding
+      // Place labels starting from just below the canvas top (inside padding)
+      const labelAreaTop = top - topPad + 6;
 
       ctx.textAlign = 'center';
 
       // Bold phase title
-      ctx.font = 'bold 12px "Helvetica Neue", Arial, sans-serif';
+      ctx.font = `bold ${titleFontSize}px "Helvetica Neue", Arial, sans-serif`;
       ctx.fillStyle = 'rgba(40,40,40,0.80)';
-      ctx.fillText(phase.labelTop, labelX, labelAreaTop + 14);
+      ctx.fillText(phase.labelTop, labelX, labelAreaTop + titleFontSize);
 
-      // Subtitle with word-wrap
-      ctx.font = '10.5px "Helvetica Neue", Arial, sans-serif';
+      // Subtitle with word-wrap, constrained to available width
+      ctx.font = `${subFontSize}px "Helvetica Neue", Arial, sans-serif`;
       ctx.fillStyle = 'rgba(60,60,60,0.65)';
 
-      const maxWidth = w - 16;
+      const maxWidth = Math.max(w - 8, 10);
       const words = phase.labelBottom.split(' ');
       let line = '';
-      let lineY = labelAreaTop + 30;
+      let lineY = labelAreaTop + titleFontSize + lineHeight;
       words.forEach((word, i) => {
         const test = line + (line ? ' ' : '') + word;
         if (ctx.measureText(test).width > maxWidth && line) {
           ctx.fillText(line, labelX, lineY);
           line = word;
-          lineY += 14;
+          lineY += lineHeight;
         } else {
           line = test;
         }
@@ -249,96 +264,121 @@ const phasePlugin = {
   }
 };
 
-new Chart(document.getElementById('chart'), {
-  type: 'line',
-  plugins: [phasePlugin],
-  data: {
-    labels,
-    datasets: [
-      {
-        label: 'Nearby Homes',
-        data: cvIdx,
-        borderColor: '#1a7a58',
-        backgroundColor: 'transparent',
-        pointBackgroundColor: '#1a7a58',
-        pointRadius: 5,
-        pointHoverRadius: 5,
-        borderWidth: 2.5,
-        tension: 0.3,
-        order: 1
-      },
-      {
-        label: 'Detroit metro',
-        data: detroitIdx,
-        borderColor: '#378ADD',
-        backgroundColor: 'transparent',
-        pointBackgroundColor: '#378ADD',
-        pointRadius: 4,
-        pointHoverRadius: 4,
-        borderWidth: 2,
-        borderDash: [6, 4],
-        tension: 0.3,
-        order: 2
-      },
-      {
-        label: 'National average',
-        data: nationalIdx,
-        borderColor: '#888',
-        backgroundColor: 'transparent',
-        pointBackgroundColor: '#888',
-        pointRadius: 4,
-        pointHoverRadius: 4,
-        borderWidth: 2,
-        borderDash: [2, 4],
-        tension: 0.3,
-        order: 3
-      }
-    ]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: { mode: 'none' },
-    plugins: {
-      legend: { display: false },
-      tooltip: { enabled: false }
-    },
-    layout: {
-      padding: { top: 80 }
-    },
-    scales: {
-      x: {
-        grid: { display: false },
-        ticks: {
-          font: { size: 12, family: "'Helvetica Neue', Arial, sans-serif" },
-          color: '#666',
-          autoSkip: false,
-          maxRotation: 0
+function buildChart() {
+  const mobile = isMobileViewport();
+
+  // On mobile: show only odd years (2011, 2013, ...) to prevent overlap
+  const mobileSkipLabels = new Set(['2012','2014','2016','2018','2020','2022','2024']);
+
+  return new Chart(document.getElementById('chart'), {
+    type: 'line',
+    plugins: [phasePlugin],
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Nearby Homes',
+          data: cvIdx,
+          borderColor: '#1a7a58',
+          backgroundColor: 'transparent',
+          pointBackgroundColor: '#1a7a58',
+          pointRadius: mobile ? 3 : 5,
+          pointHoverRadius: mobile ? 3 : 5,
+          borderWidth: 2.5,
+          tension: 0.3,
+          order: 1
+        },
+        {
+          label: 'Detroit metro',
+          data: detroitIdx,
+          borderColor: '#378ADD',
+          backgroundColor: 'transparent',
+          pointBackgroundColor: '#378ADD',
+          pointRadius: mobile ? 3 : 4,
+          pointHoverRadius: mobile ? 3 : 4,
+          borderWidth: 2,
+          borderDash: [6, 4],
+          tension: 0.3,
+          order: 2
+        },
+        {
+          label: 'National average',
+          data: nationalIdx,
+          borderColor: '#888',
+          backgroundColor: 'transparent',
+          pointBackgroundColor: '#888',
+          pointRadius: mobile ? 3 : 4,
+          pointHoverRadius: mobile ? 3 : 4,
+          borderWidth: 2,
+          borderDash: [2, 4],
+          tension: 0.3,
+          order: 3
         }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'none' },
+      plugins: {
+        legend: { display: false },
+        tooltip: { enabled: false }
       },
-      y: {
-        min: 50,
-        ticks: {
-          callback: v => v,
-          font: { size: 11, family: "'Helvetica Neue', Arial, sans-serif" },
-          color: '#888',
-          stepSize: 100
+      layout: {
+        // More top padding on mobile so phase labels don't bleed into chart
+        padding: { top: mobile ? 110 : 80 }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            font: { size: mobile ? 10 : 12, family: "'Helvetica Neue', Arial, sans-serif" },
+            color: '#666',
+            autoSkip: false,
+            maxRotation: mobile ? 45 : 0,
+            minRotation: mobile ? 45 : 0,
+            callback: function(val, index) {
+              const label = labels[index];
+              // On mobile, skip even years to halve the tick count
+              if (mobile && mobileSkipLabels.has(label)) return null;
+              return label;
+            }
+          }
         },
-        title: {
-          display: true,
-          text: 'Price index (2011 = 100)',
-          font: { size: 11, family: "'Helvetica Neue', Arial, sans-serif" },
-          color: '#999'
-        },
-        grid: { color: 'rgba(0,0,0,0.07)' }
+        y: {
+          min: 50,
+          ticks: {
+            callback: v => v,
+            font: { size: 11, family: "'Helvetica Neue', Arial, sans-serif" },
+            color: '#888',
+            stepSize: 100
+          },
+          title: {
+            display: true,
+            text: 'Price index (2011 = 100)',
+            font: { size: 11, family: "'Helvetica Neue', Arial, sans-serif" },
+            color: '#999'
+          },
+          grid: { color: 'rgba(0,0,0,0.07)' }
+        }
       }
     }
-  }
+  });
+}
+
+let chartInstance = buildChart();
+
+// Rebuild chart on resize so mobile/desktop settings switch correctly
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    chartInstance.destroy();
+    chartInstance = buildChart();
+  }, 250);
 });
 </script>
 <script>
-  // Tell Squarespace (or any parent iframe) how tall this page is,
-  // so it can resize the embed block to fit without scrollbars.
   function notifyHeight() {
     const h = document.body.scrollHeight;
     window.parent.postMessage({ type: 'resize', height: h }, '*');
